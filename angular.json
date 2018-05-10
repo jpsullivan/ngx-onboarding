@@ -116,6 +116,46 @@
           }
         }
       }
+    },
+    "ngx-onboarding": {
+      "root": "projects/ngx-onboarding",
+      "sourceRoot": "projects/ngx-onboarding/src",
+      "projectType": "library",
+      "prefix": "obd",
+      "architect": {
+        "build": {
+          "builder": "@angular-devkit/build-ng-packagr:build",
+          "options": {
+            "tsConfig": "projects/ngx-onboarding/tsconfig.lib.json",
+            "project": "projects/ngx-onboarding/ng-package.json"
+          },
+          "configurations": {
+            "production": {
+              "project": "projects/ngx-onboarding/ng-package.prod.json"
+            }
+          }
+        },
+        "test": {
+          "builder": "@angular-devkit/build-angular:karma",
+          "options": {
+            "main": "projects/ngx-onboarding/src/test.ts",
+            "tsConfig": "projects/ngx-onboarding/tsconfig.spec.json",
+            "karmaConfig": "projects/ngx-onboarding/karma.conf.js"
+          }
+        },
+        "lint": {
+          "builder": "@angular-devkit/build-angular:tslint",
+          "options": {
+            "tsConfig": [
+              "projects/ngx-onboarding/tsconfig.lib.json",
+              "projects/ngx-onboarding/tsconfig.spec.json"
+            ],
+            "exclude": [
+              "**/node_modules/**"
+            ]
+          }
+        }
+      }
     }
   },
   "defaultProject": "ngx-onboarding-lib"
