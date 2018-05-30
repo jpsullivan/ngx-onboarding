@@ -23,7 +23,7 @@ export class ManagerComponent extends CdkStepper implements OnInit, AfterContent
    * For toggling the overlay "blanket" transparency
    * @type {boolean}
    */
-  @Input() overlayIsTinted = true;
+  @Input() overlayIsTinted: boolean = true;
 
   /**
    * Typically the app, or a section of the app.
