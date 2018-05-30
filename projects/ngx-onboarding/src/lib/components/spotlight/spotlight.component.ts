@@ -26,7 +26,7 @@ import { startWith, switchMap, take } from 'rxjs/operators';
 import { spotlightAnimations } from '../../models/spotlight-animations';
 import { SpotlightContent } from '../../directives/spotlight-content';
 import {
-  throwMatMenuInvalidPositionX,
+  throwSpotlightInvalidPositionX,
   throwSpotlightInvalidPositionY
 } from '../../models/spotlight-errors';
 import { MatMenuItem } from './menu-item';
@@ -34,7 +34,9 @@ import { OBD_SPOTLIGHT_PANEL, SpotlightPanel } from '../../models/spotlight-pane
 import { SpotlightPositionX, SpotlightPositionY } from '../../models/spotlight-positions';
 import { AnimationEvent } from '@angular/animations';
 
-/** Default `mat-menu` options that can be overridden. */
+/**
+ * Default `obd-spotlight` options that can be overridden.
+ */
 export interface SpotlightDefaultOptions {
   /** The x-axis position of the spotlight. */
   xPosition: SpotlightPositionX;
@@ -48,7 +50,7 @@ export interface SpotlightDefaultOptions {
   /** Class to be applied to the spotlight's backdrop. */
   backdropClass: string;
 
-  /** Whether the menu has a backdrop. */
+  /** Whether the spotlight has a backdrop. */
   hasBackdrop?: boolean;
 }
 
@@ -71,7 +73,7 @@ export function SPOTLIGHT_DEFAULT_OPTIONS_FACTORY(): SpotlightDefaultOptions {
   };
 }
 /**
- * Start elevation for the menu panel.
+ * Start elevation for the spotlight panel.
  * @docs-private
  */
 const OBD_SPOTLIGHT_BASE_ELEVATION = 2;
@@ -99,23 +101,20 @@ export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>,
   /** Emits whenever the amount of menu items changes. */
   private _itemChanges = new Subject<MatMenuItem[]>();
 
-  /** Subscription to tab events on the menu panel */
+  /** Subscription to tab events on the spotlight panel */
   private _tabSubscription = Subscription.EMPTY;
 
-  /** Config object to be passed into the menu's ngClass */
+  /** Config object to be passed into the spotlight's ngClass */
   _classList: { [key: string]: boolean } = {};
 
   /** Current state of the panel animation. */
   _panelAnimationState: 'void' | 'enter' = 'void';
 
-  /** Emits whenever an animation on the menu completes. */
+  /** Emits whenever an animation on the spotlight completes. */
   _animationDone = new Subject<AnimationEvent>();
 
   /** Whether the spotlight is animating. */
   _isAnimating: boolean;
-
-  /** Parent menu of the current spotlight panel. */
-  parentMenu: SpotlightPanel | undefined;
 
   /** Layout direction of the menu. */
   direction: Direction;
@@ -130,7 +129,7 @@ export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>,
   }
   set xPosition(value: SpotlightPositionX) {
     if (value !== 'before' && value !== 'after') {
-      throwMatMenuInvalidPositionX();
+      throwSpotlightInvalidPositionX();
     }
     this._xPosition = value;
   }

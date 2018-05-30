@@ -15,7 +15,7 @@ export function throwMatMenuMissingError() {
  * In other words, it doesn't match 'before' or 'after'.
  * @docs-private
  */
-export function throwMatMenuInvalidPositionX() {
+export function throwSpotlightInvalidPositionX() {
   throw Error(`x-position value must be either 'before' or after'.
       Example: <mat-menu x-position="before" #menu="matMenu"></mat-menu>`);
 }
