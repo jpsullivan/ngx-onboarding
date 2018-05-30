@@ -20,7 +20,6 @@ export interface SpotlightPanel<T = any> {
   overlapTrigger: boolean;
   templateRef: TemplateRef<any>;
   close: EventEmitter<void | 'click' | 'keydown' | 'tab'>;
-  parentMenu?: SpotlightPanel | undefined;
   direction?: Direction;
   focusFirstItem: (origin?: FocusOrigin) => void;
   resetActiveItem: () => void;
