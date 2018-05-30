@@ -23,46 +23,46 @@ import {
 } from '@angular/core';
 import { merge, Observable, Subject, Subscription } from 'rxjs';
 import { startWith, switchMap, take } from 'rxjs/operators';
-import { matMenuAnimations } from '../../models/spotlight-animations';
-import { MatMenuContent } from '../../directives/spotlight-content';
+import { spotlightAnimations } from '../../models/spotlight-animations';
+import { SpotlightContent } from '../../directives/spotlight-content';
 import {
   throwMatMenuInvalidPositionX,
-  throwMatMenuInvalidPositionY
+  throwSpotlightInvalidPositionY
 } from '../../models/spotlight-errors';
 import { MatMenuItem } from './menu-item';
-import { MAT_MENU_PANEL, MatMenuPanel } from '../../models/spotlight-panel';
-import { MenuPositionX, MenuPositionY } from '../../models/spotlight-positions';
+import { OBD_SPOTLIGHT_PANEL, SpotlightPanel } from '../../models/spotlight-panel';
+import { SpotlightPositionX, SpotlightPositionY } from '../../models/spotlight-positions';
 import { AnimationEvent } from '@angular/animations';
 
 /** Default `mat-menu` options that can be overridden. */
-export interface MatMenuDefaultOptions {
-  /** The x-axis position of the menu. */
-  xPosition: MenuPositionX;
+export interface SpotlightDefaultOptions {
+  /** The x-axis position of the spotlight. */
+  xPosition: SpotlightPositionX;
 
-  /** The y-axis position of the menu. */
-  yPosition: MenuPositionY;
+  /** The y-axis position of the spotlight. */
+  yPosition: SpotlightPositionY;
 
-  /** Whether the menu should overlap the menu trigger. */
+  /** Whether the spotlight should overlap the spotlight trigger. */
   overlapTrigger: boolean;
 
-  /** Class to be applied to the menu's backdrop. */
+  /** Class to be applied to the spotlight's backdrop. */
   backdropClass: string;
 
   /** Whether the menu has a backdrop. */
   hasBackdrop?: boolean;
 }
 
-/** Injection token to be used to override the default options for `mat-menu`. */
-export const MAT_MENU_DEFAULT_OPTIONS = new InjectionToken<MatMenuDefaultOptions>(
-  'mat-menu-default-options',
+/** Injection token to be used to override the default options for `obd-spotlight`. */
+export const SPOTLIGHT_DEFAULT_OPTIONS = new InjectionToken<SpotlightDefaultOptions>(
+  'obd-spotlight-default-options',
   {
     providedIn: 'root',
-    factory: MAT_MENU_DEFAULT_OPTIONS_FACTORY
+    factory: SPOTLIGHT_DEFAULT_OPTIONS_FACTORY
   }
 );
 
 /** @docs-private */
-export function MAT_MENU_DEFAULT_OPTIONS_FACTORY(): MatMenuDefaultOptions {
+export function SPOTLIGHT_DEFAULT_OPTIONS_FACTORY(): SpotlightDefaultOptions {
   return {
     overlapTrigger: true,
     xPosition: 'after',
@@ -74,23 +74,23 @@ export function MAT_MENU_DEFAULT_OPTIONS_FACTORY(): MatMenuDefaultOptions {
  * Start elevation for the menu panel.
  * @docs-private
  */
-const MAT_MENU_BASE_ELEVATION = 2;
+const OBD_SPOTLIGHT_BASE_ELEVATION = 2;
 
 @Component({
   moduleId: module.id,
   selector: 'obd-spotlight',
-  templateUrl: 'spotlight.html',
-  styleUrls: ['spotlight.css'],
+  templateUrl: 'spotlight.component.html',
+  styleUrls: ['spotlight.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
   encapsulation: ViewEncapsulation.None,
   exportAs: 'obdSpotlight',
-  animations: [matMenuAnimations.transformMenu, matMenuAnimations.fadeInItems],
-  providers: [{ provide: MAT_MENU_PANEL, useExisting: Spotlight }]
+  animations: [spotlightAnimations.transformMenu, spotlightAnimations.fadeInItems],
+  providers: [{ provide: OBD_SPOTLIGHT_PANEL, useExisting: Spotlight }]
 })
-export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, OnDestroy {
+export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>, OnDestroy {
   private _keyManager: FocusKeyManager<MatMenuItem>;
-  private _xPosition: MenuPositionX = this._defaultOptions.xPosition;
-  private _yPosition: MenuPositionY = this._defaultOptions.yPosition;
+  private _xPosition: SpotlightPositionX = this._defaultOptions.xPosition;
+  private _yPosition: SpotlightPositionY = this._defaultOptions.yPosition;
   private _previousElevation: string;
 
   /** Menu items inside the current menu. */
@@ -111,11 +111,11 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
   /** Emits whenever an animation on the menu completes. */
   _animationDone = new Subject<AnimationEvent>();
 
-  /** Whether the menu is animating. */
+  /** Whether the spotlight is animating. */
   _isAnimating: boolean;
 
-  /** Parent menu of the current menu panel. */
-  parentMenu: MatMenuPanel | undefined;
+  /** Parent menu of the current spotlight panel. */
+  parentMenu: SpotlightPanel | undefined;
 
   /** Layout direction of the menu. */
   direction: Direction;
@@ -125,24 +125,24 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
 
   /** Position of the menu in the X axis. */
   @Input()
-  get xPosition(): MenuPositionX {
+  get xPosition(): SpotlightPositionX {
     return this._xPosition;
   }
-  set xPosition(value: MenuPositionX) {
+  set xPosition(value: SpotlightPositionX) {
     if (value !== 'before' && value !== 'after') {
       throwMatMenuInvalidPositionX();
     }
     this._xPosition = value;
   }
 
-  /** Position of the menu in the Y axis. */
+  /** Position of the spotlight in the Y axis. */
   @Input()
-  get yPosition(): MenuPositionY {
+  get yPosition(): SpotlightPositionY {
     return this._yPosition;
   }
-  set yPosition(value: MenuPositionY) {
+  set yPosition(value: SpotlightPositionY) {
     if (value !== 'above' && value !== 'below') {
-      throwMatMenuInvalidPositionY();
+      throwSpotlightInvalidPositionY();
     }
     this._yPosition = value;
   }
@@ -161,9 +161,9 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
    * Spotlight content that will be rendered lazily.
    * @docs-private
    */
-  @ContentChild(MatMenuContent) lazyContent: MatMenuContent;
+  @ContentChild(SpotlightContent) lazyContent: SpotlightContent;
 
-  /** Whether the menu should overlap its trigger. */
+  /** Whether the spotlight should overlap its trigger. */
   @Input()
   get overlapTrigger(): boolean {
     return this._overlapTrigger;
@@ -173,7 +173,7 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
   }
   private _overlapTrigger: boolean = this._defaultOptions.overlapTrigger;
 
-  /** Whether the menu has a backdrop. */
+  /** Whether the spotlight has a backdrop. */
   @Input()
   get hasBackdrop(): boolean | undefined {
     return this._hasBackdrop;
@@ -184,9 +184,10 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
   private _hasBackdrop: boolean | undefined = this._defaultOptions.hasBackdrop;
 
   /**
-   * This method takes classes set on the host mat-menu element and applies them on the
-   * menu template that displays in the overlay container.  Otherwise, it's difficult
-   * to style the containing menu from outside the component.
+   * This method takes classes set on the host obd-spotlight element and applies them on the
+   * spotlight template that displays in the overlay container.
+   *
+   * Otherwise, it's difficult to style the containing spotlight from outside the component.
    * @param classes list of class names
    */
   @Input('class')
@@ -216,7 +217,7 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
     this.panelClass = classes;
   }
 
-  /** Event emitted when the menu is closed. */
+  /** Event emitted when the spotlight is closed. */
   @Output()
   readonly closed: EventEmitter<void | 'click' | 'keydown' | 'tab'> = new EventEmitter<
     void | 'click' | 'keydown' | 'tab'
@@ -232,7 +233,7 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
   constructor(
     private _elementRef: ElementRef,
     private _ngZone: NgZone,
-    @Inject(MAT_MENU_DEFAULT_OPTIONS) private _defaultOptions: MatMenuDefaultOptions
+    @Inject(SPOTLIGHT_DEFAULT_OPTIONS) private _defaultOptions: SpotlightDefaultOptions
   ) {}
 
   ngAfterContentInit() {
@@ -253,7 +254,9 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
     );
   }
 
-  /** Handle a keyboard event from the menu, delegating to the appropriate action. */
+  /**
+   * Handle a keyboard event from the spotlight, delegating to the appropriate action.
+   * */
   _handleKeydown(event: KeyboardEvent) {
     const keyCode = event.keyCode;
 
@@ -306,12 +309,11 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
   }
 
   /**
-   * Sets the menu panel elevation.
-   * @param depth Number of parent menus that come before the menu.
+   * Sets the spotlight panel elevation.
    */
-  setElevation(depth: number): void {
+  setElevation(): void {
     // The elevation starts at the base and increases by one for each level.
-    const newElevation = `mat-elevation-z${MAT_MENU_BASE_ELEVATION + depth}`;
+    const newElevation = `mat-elevation-z${OBD_SPOTLIGHT_BASE_ELEVATION}`;
     const customElevation = Object.keys(this._classList).find(c => c.startsWith('mat-elevation-z'));
 
     if (!customElevation || customElevation === this._previousElevation) {
@@ -353,19 +355,25 @@ export class Spotlight implements AfterContentInit, MatMenuPanel<MatMenuItem>, O
     }
   }
 
-  /** Starts the enter animation. */
+  /**
+   * Starts the enter animation.
+   */
   _startAnimation() {
     // @deletion-target 7.0.0 Combine with _resetAnimation.
     this._panelAnimationState = 'enter';
   }
 
-  /** Resets the panel animation to its initial state. */
+  /**
+   * Resets the panel animation to its initial state.
+   */
   _resetAnimation() {
     // @deletion-target 7.0.0 Combine with _startAnimation.
     this._panelAnimationState = 'void';
   }
 
-  /** Callback that is invoked when the panel animation completes. */
+  /**
+   * Callback that is invoked when the panel animation completes.
+   */
   _onAnimationDone(event: AnimationEvent) {
     this._animationDone.next(event);
     this._isAnimating = false;

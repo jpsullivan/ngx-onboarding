@@ -17,7 +17,7 @@ import { DOCUMENT } from '@angular/common';
 @Directive({
   selector: 'ng-template[obdSpotlightContent]'
 })
-export class MatMenuContent implements OnDestroy {
+export class SpotlightContent implements OnDestroy {
   private _portal: TemplatePortal<any>;
   private _outlet: DomPortalOutlet;
 

@@ -25,7 +25,7 @@ export function throwMatMenuInvalidPositionX() {
  * In other words, it doesn't match 'above' or 'below'.
  * @docs-private
  */
-export function throwMatMenuInvalidPositionY() {
+export function throwSpotlightInvalidPositionY() {
   throw Error(`y-position value must be either 'above' or below'.
       Example: <mat-menu y-position="above" #menu="matMenu"></mat-menu>`);
 }

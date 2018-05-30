@@ -27,11 +27,11 @@ import {
 } from '@angular/core';
 import { asapScheduler, merge, of as observableOf, Subscription } from 'rxjs';
 import { delay, filter, take, takeUntil } from 'rxjs/operators';
-import { MatMenu } from './menu-directive';
-import { throwMatMenuMissingError } from './menu-errors';
+import { Spotlight } from '../../components/spotlight/spotlight.component';
+import { throwMatMenuMissingError } from '../../models/spotlight-errors';
 import { MatMenuItem } from './menu-item';
-import { MatMenuPanel } from './menu-panel';
-import { MenuPositionX, MenuPositionY } from './menu-positions';
+import { SpotlightPanel } from '../../models/spotlight-panel';
+import { SpotlightPositionX, SpotlightPositionY } from '../../models/spotlight-positions';
 
 /** Injection token that determines the scroll handling while the menu is open. */
 export const MAT_MENU_SCROLL_STRATEGY = new InjectionToken<() => ScrollStrategy>(
@@ -56,18 +56,18 @@ export const MENU_PANEL_TOP_PADDING = 8;
 // TODO(andrewseguin): Remove the kebab versions in favor of camelCased attribute selectors
 
 /**
- * This directive is intended to be used in conjunction with an mat-menu tag.  It is
+ * This directive is intended to be used in conjunction with an obd-spotlight tag.  It is
  * responsible for toggling the display of the provided menu instance.
  */
 @Directive({
-  selector: `[mat-menu-trigger-for], [matMenuTriggerFor]`,
+  selector: `[obd-spotlight-target-for], [obdSpotlightTargetFor]`,
   host: {
     'aria-haspopup': 'true',
     '(mousedown)': '_handleMousedown($event)',
     '(keydown)': '_handleKeydown($event)',
     '(click)': '_handleClick($event)'
   },
-  exportAs: 'matMenuTrigger'
+  exportAs: 'obdSpotlightTarget'
 })
 export class MatMenuTrigger implements AfterContentInit, OnDestroy {
   private _portal: TemplatePortal;
@@ -85,16 +85,16 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
    * @deletion-target 7.0.0
    */
   @Input('mat-menu-trigger-for')
-  get _deprecatedMatMenuTriggerFor(): MatMenuPanel {
+  get _deprecatedMatMenuTriggerFor(): SpotlightPanel {
     return this.menu;
   }
 
-  set _deprecatedMatMenuTriggerFor(v: MatMenuPanel) {
+  set _deprecatedMatMenuTriggerFor(v: SpotlightPanel) {
     this.menu = v;
   }
 
   /** References the menu instance that the trigger is associated with. */
-  @Input('matMenuTriggerFor') menu: MatMenuPanel;
+  @Input('matMenuTriggerFor') menu: SpotlightPanel;
 
   /** Data to be passed along to any lazily-rendered content. */
   @Input('matMenuTriggerData') menuData: any;
@@ -126,7 +126,7 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
     private _element: ElementRef,
     private _viewContainerRef: ViewContainerRef,
     @Inject(MAT_MENU_SCROLL_STRATEGY) private _scrollStrategy,
-    @Optional() private _parentMenu: MatMenu,
+    @Optional() private _parentMenu: Spotlight,
     @Optional()
     @Self()
     private _menuItemInstance: MatMenuItem,
@@ -200,7 +200,7 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
     this._closeSubscription = this._menuClosingActions().subscribe(() => this.closeMenu());
     this._initMenu();
 
-    if (this.menu instanceof MatMenu) {
+    if (this.menu instanceof Spotlight) {
       this.menu._startAnimation();
     }
   }
@@ -233,7 +233,7 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
     this._closeSubscription.unsubscribe();
     this._overlayRef.detach();
 
-    if (menu instanceof MatMenu) {
+    if (menu instanceof Spotlight) {
       menu._resetAnimation();
 
       if (menu.lazyContent) {
@@ -346,7 +346,7 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
   private _getOverlayConfig(): OverlayConfig {
     return new OverlayConfig({
       positionStrategy: this._getPosition(),
-      hasBackdrop: this.menu.hasBackdrop == null ? !this.triggersSubmenu() : this.menu.hasBackdrop,
+      hasBackdrop: this.menu.hasBackdrop,
       backdropClass: this.menu.backdropClass || 'cdk-overlay-transparent-backdrop',
       scrollStrategy: this._scrollStrategy(),
       direction: this._dir
@@ -361,8 +361,10 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
   private _subscribeToPositions(position: FlexibleConnectedPositionStrategy): void {
     if (this.menu.setPositionClasses) {
       position.positionChanges.subscribe(change => {
-        const posX: MenuPositionX = change.connectionPair.overlayX === 'start' ? 'after' : 'before';
-        const posY: MenuPositionY = change.connectionPair.overlayY === 'top' ? 'below' : 'above';
+        const posX: SpotlightPositionX =
+          change.connectionPair.overlayX === 'start' ? 'after' : 'before';
+        const posY: SpotlightPositionY =
+          change.connectionPair.overlayY === 'top' ? 'below' : 'above';
 
         this.menu.setPositionClasses!(posX, posY);
       });
@@ -500,7 +502,7 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
         // If the same menu is used between multiple triggers, it might still be animating
         // while the new trigger tries to re-open it. Wait for the animation to finish
         // before doing so. Also interrupt if the user moves to another item.
-        if (this.menu instanceof MatMenu && this.menu._isAnimating) {
+        if (this.menu instanceof Spotlight && this.menu._isAnimating) {
           this.menu._animationDone
             .pipe(take(1), takeUntil(this._parentMenu._hovered()))
             .subscribe(() => this.openMenu());

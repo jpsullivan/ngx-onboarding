@@ -1,2 +1,2 @@
-export type MenuPositionX = 'before' | 'after';
-export type MenuPositionY = 'above' | 'below';
+export type SpotlightPositionX = 'before' | 'after';
+export type SpotlightPositionY = 'above' | 'below';

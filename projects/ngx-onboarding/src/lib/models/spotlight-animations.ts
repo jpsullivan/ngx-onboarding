@@ -15,7 +15,7 @@ import {
  * Animation duration and timing values are based on:
  * https://material.io/guidelines/components/menus.html#menus-usage
  */
-export const matMenuAnimations: {
+export const spotlightAnimations: {
   readonly transformMenu: AnimationTriggerMetadata;
   readonly fadeInItems: AnimationTriggerMetadata;
 } = {
@@ -73,10 +73,10 @@ export const matMenuAnimations: {
  * @deprecated
  * @deletion-target 7.0.0
  */
-export const fadeInItems = matMenuAnimations.fadeInItems;
+export const fadeInItems = spotlightAnimations.fadeInItems;
 
 /**
  * @deprecated
  * @deletion-target 7.0.0
  */
-export const transformMenu = matMenuAnimations.transformMenu;
+export const transformMenu = spotlightAnimations.transformMenu;
