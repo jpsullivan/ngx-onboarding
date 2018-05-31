@@ -28,39 +28,41 @@ import {
 import { asapScheduler, merge, of as observableOf, Subscription } from 'rxjs';
 import { delay, filter, take, takeUntil } from 'rxjs/operators';
 import { Spotlight } from '../../components/spotlight/spotlight.component';
-import { throwMatMenuMissingError } from '../../models/spotlight-errors';
+import { throwSpotlightMissingError } from '../../models/spotlight-errors';
 import { MatMenuItem } from './menu-item';
 import { SpotlightPanel } from '../../models/spotlight-panel';
 import { SpotlightPositionX, SpotlightPositionY } from '../../models/spotlight-positions';
 
-/** Injection token that determines the scroll handling while the menu is open. */
-export const MAT_MENU_SCROLL_STRATEGY = new InjectionToken<() => ScrollStrategy>(
-  'mat-menu-scroll-strategy'
+/**
+ * Injection token that determines the scroll handling while the spotlight is open.
+ */
+export const OBD_SPOTLIGHT_SCROLL_STRATEGY = new InjectionToken<() => ScrollStrategy>(
+  'obd-spotlight-scroll-strategy'
 );
 
 /** @docs-private */
-export function MAT_MENU_SCROLL_STRATEGY_FACTORY(overlay: Overlay): () => ScrollStrategy {
+export function OBD_SPOTLIGHT_SCROLL_STRATEGY_FACTORY(overlay: Overlay): () => ScrollStrategy {
   return () => overlay.scrollStrategies.reposition();
 }
 
 /** @docs-private */
-export const MAT_MENU_SCROLL_STRATEGY_FACTORY_PROVIDER = {
-  provide: MAT_MENU_SCROLL_STRATEGY,
+export const OBD_SPOTLIGHT_SCROLL_STRATEGY_FACTORY_PROVIDER = {
+  provide: OBD_SPOTLIGHT_SCROLL_STRATEGY,
   deps: [Overlay],
-  useFactory: MAT_MENU_SCROLL_STRATEGY_FACTORY
+  useFactory: OBD_SPOTLIGHT_SCROLL_STRATEGY_FACTORY
 };
 
-/** Default top padding of the menu panel. */
-export const MENU_PANEL_TOP_PADDING = 8;
-
-// TODO(andrewseguin): Remove the kebab versions in favor of camelCased attribute selectors
+/**
+ * Default top padding of the spotlight panel
+ */
+export const SPOTLIGHT_PANEL_TOP_PADDING = 8;
 
 /**
  * This directive is intended to be used in conjunction with an obd-spotlight tag.  It is
- * responsible for toggling the display of the provided menu instance.
+ * responsible for toggling the display of the provided spotlight instance.
  */
 @Directive({
-  selector: `[obd-spotlight-target-for], [obdSpotlightTargetFor]`,
+  selector: `[obdSpotlightTargetFor]`,
   host: {
     'aria-haspopup': 'true',
     '(mousedown)': '_handleMousedown($event)',
@@ -69,63 +71,42 @@ export const MENU_PANEL_TOP_PADDING = 8;
   },
   exportAs: 'obdSpotlightTarget'
 })
-export class MatMenuTrigger implements AfterContentInit, OnDestroy {
+export class SpotlightTarget implements AfterContentInit, OnDestroy {
   private _portal: TemplatePortal;
   private _overlayRef: OverlayRef | null = null;
-  private _menuOpen: boolean = false;
+  private _spotlightOpen: boolean = false;
   private _closeSubscription = Subscription.EMPTY;
   private _hoverSubscription = Subscription.EMPTY;
 
   // Tracking input type is necessary so it's possible to only auto-focus
-  // the first item of the list when the menu is opened via the keyboard
+  // the first item of the list when the spotlight is opened via the keyboard
   private _openedByMouse: boolean = false;
 
   /**
-   * @deprecated
-   * @deletion-target 7.0.0
+   * References the spotlight instance that the target is associated with.
    */
-  @Input('mat-menu-trigger-for')
-  get _deprecatedMatMenuTriggerFor(): SpotlightPanel {
-    return this.menu;
-  }
-
-  set _deprecatedMatMenuTriggerFor(v: SpotlightPanel) {
-    this.menu = v;
-  }
-
-  /** References the menu instance that the trigger is associated with. */
-  @Input('matMenuTriggerFor') menu: SpotlightPanel;
-
-  /** Data to be passed along to any lazily-rendered content. */
-  @Input('matMenuTriggerData') menuData: any;
-
-  /** Event emitted when the associated menu is opened. */
-  @Output() readonly menuOpened: EventEmitter<void> = new EventEmitter<void>();
+  @Input('obdSpotlightTargetFor') spotlight: SpotlightPanel;
 
   /**
-   * Event emitted when the associated menu is opened.
-   * @deprecated Switch to `menuOpened` instead
-   * @deletion-target 7.0.0
+   * Data to be passed along to any lazily-rendered content.
    */
-  // tslint:disable-next-line:no-output-on-prefix
-  @Output() readonly onMenuOpen: EventEmitter<void> = this.menuOpened;
-
-  /** Event emitted when the associated menu is closed. */
-  @Output() readonly menuClosed: EventEmitter<void> = new EventEmitter<void>();
+  @Input('obdSpotlightTriggerData') spotlightData: any;
 
   /**
-   * Event emitted when the associated menu is closed.
-   * @deprecated Switch to `menuClosed` instead
-   * @deletion-target 7.0.0
+   * Event emitted when the associated spotlight is opened.
    */
-  // tslint:disable-next-line:no-output-on-prefix
-  @Output() readonly onMenuClose: EventEmitter<void> = this.menuClosed;
+  @Output() readonly spotlightOpened: EventEmitter<void> = new EventEmitter<void>();
+
+  /**
+   * Event emitted when the associated spotlight is closed.
+   */
+  @Output() readonly spotlightClosed: EventEmitter<void> = new EventEmitter<void>();
 
   constructor(
     private _overlay: Overlay,
     private _element: ElementRef,
     private _viewContainerRef: ViewContainerRef,
-    @Inject(MAT_MENU_SCROLL_STRATEGY) private _scrollStrategy,
+    @Inject(OBD_SPOTLIGHT_SCROLL_STRATEGY) private _scrollStrategy,
     @Optional() private _dir: Directionality,
     // TODO(crisbeto): make the _focusMonitor required when doing breaking changes.
     // @deletion-target 7.0.0
@@ -133,10 +114,10 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
   ) {}
 
   ngAfterContentInit() {
-    this._checkMenu();
+    this._checkSpotlight();
 
-    this.menu.close.subscribe(reason => {
-      this._destroyMenu();
+    this.spotlight.close.subscribe(reason => {
+      this._destroySpotlight();
     });
 
     this._handleHover();
@@ -151,50 +132,68 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
     this._cleanUpSubscriptions();
   }
 
-  /** Whether the menu is open. */
-  get menuOpen(): boolean {
-    return this._menuOpen;
+  /**
+   * Whether the spotlight is open.
+   * @readonly
+   * @type {boolean}
+   */
+  get spotlightOpen(): boolean {
+    return this._spotlightOpen;
   }
 
-  /** The text direction of the containing app. */
+  /**
+   * The text direction of the containing app.
+   * @readonly
+   * @type {Direction}
+   */
   get dir(): Direction {
     return this._dir && this._dir.value === 'rtl' ? 'rtl' : 'ltr';
   }
 
-  /** Toggles the menu between the open and closed states. */
-  toggleMenu(): void {
-    return this._menuOpen ? this.closeMenu() : this.openMenu();
+  /**
+   * Toggles the spotlight between the open and closed states.
+   * @returns {void}
+   */
+  toggleSpotlight(): void {
+    return this._spotlightOpen ? this.closeSpotlight() : this.openSpotlight();
   }
 
-  /** Opens the menu. */
-  openMenu(): void {
-    if (this._menuOpen) {
+  /**
+   * Opens the spotlight.
+   * @returns {void}
+   */
+  openSpotlight(): void {
+    if (this._spotlightOpen) {
       return;
     }
 
     const overlayRef = this._createOverlay();
     overlayRef.attach(this._portal);
 
-    if (this.menu.lazyContent) {
-      this.menu.lazyContent.attach(this.menuData);
+    if (this.spotlight.lazyContent) {
+      this.spotlight.lazyContent.attach(this.spotlightData);
     }
 
-    this._closeSubscription = this._menuClosingActions().subscribe(() => this.closeMenu());
-    this._initMenu();
+    this._closeSubscription = this._spotlightClosingActions().subscribe(() =>
+      this.closeSpotlight()
+    );
+    this._initSpotlight();
 
-    if (this.menu instanceof Spotlight) {
-      this.menu._startAnimation();
+    if (this.spotlight instanceof Spotlight) {
+      this.spotlight._startAnimation();
     }
-  }
-
-  /** Closes the menu. */
-  closeMenu(): void {
-    this.menu.close.emit();
   }
 
   /**
-   * Focuses the menu trigger.
-   * @param origin Source of the menu trigger's focus.
+   * Closes the spotlight.
+   */
+  closeSpotlight(): void {
+    this.spotlight.close.emit();
+  }
+
+  /**
+   * Focuses the spotlight target.
+   * @param origin Source of the spotlight target's focus.
    */
   focus(origin: FocusOrigin = 'program') {
     if (this._focusMonitor) {
@@ -204,65 +203,72 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
     }
   }
 
-  /** Closes the menu and does the necessary cleanup. */
-  private _destroyMenu() {
-    if (!this._overlayRef || !this.menuOpen) {
+  /**
+   * Closes the spotlight and does the necessary cleanup.
+   * @private
+   * @returns
+   */
+  private _destroySpotlight() {
+    if (!this._overlayRef || !this.spotlightOpen) {
       return;
     }
 
-    const menu = this.menu;
+    const spotlight = this.spotlight;
 
     this._closeSubscription.unsubscribe();
     this._overlayRef.detach();
 
-    if (menu instanceof Spotlight) {
-      menu._resetAnimation();
+    if (spotlight instanceof Spotlight) {
+      spotlight._resetAnimation();
 
-      if (menu.lazyContent) {
+      if (spotlight.lazyContent) {
         // Wait for the exit animation to finish before detaching the content.
-        menu._animationDone
+        spotlight._animationDone
           .pipe(filter(event => event.toState === 'void'), take(1))
           .subscribe(() => {
-            menu.lazyContent!.detach();
-            this._resetMenu();
+            spotlight.lazyContent!.detach();
+            this._resetSpotlight();
           });
       } else {
-        this._resetMenu();
+        this._resetSpotlight();
       }
     } else {
-      this._resetMenu();
+      this._resetSpotlight();
 
-      if (menu.lazyContent) {
-        menu.lazyContent.detach();
+      if (spotlight.lazyContent) {
+        spotlight.lazyContent.detach();
       }
     }
   }
 
   /**
-   * This method sets the menu state to open and focuses the first item if
+   * This method sets the spotlight state to open and focuses the first item if
    * the spotlight was opened via the keyboard.
    */
-  private _initMenu(): void {
-    this.menu.direction = this.dir;
-    this._setMenuElevation();
-    this._setIsMenuOpen(true);
-    this.menu.focusFirstItem(this._openedByMouse ? 'mouse' : 'program');
+  private _initSpotlight(): void {
+    this.spotlight.direction = this.dir;
+    this._setSpotlightElevation();
+    this._setIsSpotlightOpen(true);
+    this.spotlight.focusFirstItem(this._openedByMouse ? 'mouse' : 'program');
   }
 
-  /** Updates the menu elevation based on the amount of parent menus that it has. */
-  private _setMenuElevation(): void {
-    if (this.menu.setElevation) {
+  /**
+   * Updates the spotlight elevation.
+   * @private
+   */
+  private _setSpotlightElevation(): void {
+    if (this.spotlight.setElevation) {
       let depth = 0;
-      this.menu.setElevation(depth);
+      this.spotlight.setElevation(depth);
     }
   }
 
   /**
-   * This method resets the menu when it's closed, most importantly restoring
-   * focus to the menu trigger if the menu was opened via the keyboard.
+   * This method resets the spotlight when it's closed, most importantly restoring
+   * focus to the spotlight target if the spotlight was opened via the keyboard.
    */
-  private _resetMenu(): void {
-    this._setIsMenuOpen(false);
+  private _resetSpotlight(): void {
+    this._setIsSpotlightOpen(false);
 
     // We should reset focus if the user is navigating using a keyboard or
     // if we have a top-level trigger which might cause focus to be lost
@@ -276,29 +282,32 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
     this._openedByMouse = false;
   }
 
-  // set state rather than toggle to support triggers sharing a menu
-  private _setIsMenuOpen(isOpen: boolean): void {
-    this._menuOpen = isOpen;
-    this._menuOpen ? this.menuOpened.emit() : this.menuClosed.emit();
+  /**
+   * Set state rather than toggle to support targets sharing a spotlight
+   * @param isOpen
+   */
+  private _setIsSpotlightOpen(isOpen: boolean): void {
+    this._spotlightOpen = isOpen;
+    this._spotlightOpen ? this.spotlightOpened.emit() : this.spotlightClosed.emit();
   }
 
   /**
-   * This method checks that a valid instance of MatMenu has been passed into
-   * matMenuTriggerFor. If not, an exception is thrown.
+   * This method checks that a valid instance of Spotlight has been passed into
+   * obdSpotlightTargetFor. If not, an exception is thrown.
    */
-  private _checkMenu() {
-    if (!this.menu) {
-      throwMatMenuMissingError();
+  private _checkSpotlight() {
+    if (!this.spotlight) {
+      throwSpotlightMissingError();
     }
   }
 
   /**
-   * This method creates the overlay from the provided menu's template and saves its
-   * OverlayRef so that it can be attached to the DOM when openMenu is called.
+   * This method creates the overlay from the provided spotlight's template and saves its
+   * OverlayRef so that it can be attached to the DOM when openSpotlight is called.
    */
   private _createOverlay(): OverlayRef {
     if (!this._overlayRef) {
-      this._portal = new TemplatePortal(this.menu.templateRef, this._viewContainerRef);
+      this._portal = new TemplatePortal(this.spotlight.templateRef, this._viewContainerRef);
       const config = this._getOverlayConfig();
       this._subscribeToPositions(config.positionStrategy as FlexibleConnectedPositionStrategy);
       this._overlayRef = this._overlay.create(config);
@@ -314,8 +323,8 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
   private _getOverlayConfig(): OverlayConfig {
     return new OverlayConfig({
       positionStrategy: this._getPosition(),
-      hasBackdrop: this.menu.hasBackdrop,
-      backdropClass: this.menu.backdropClass || 'cdk-overlay-transparent-backdrop',
+      hasBackdrop: this.spotlight.hasBackdrop,
+      backdropClass: this.spotlight.backdropClass || 'cdk-overlay-transparent-backdrop',
       scrollStrategy: this._scrollStrategy(),
       direction: this._dir
     });
@@ -323,39 +332,39 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
 
   /**
    * Listens to changes in the position of the overlay and sets the correct classes
-   * on the menu based on the new position. This ensures the animation origin is always
+   * on the spotlight based on the new position. This ensures the animation origin is always
    * correct, even if a fallback position is used for the overlay.
    */
   private _subscribeToPositions(position: FlexibleConnectedPositionStrategy): void {
-    if (this.menu.setPositionClasses) {
+    if (this.spotlight.setPositionClasses) {
       position.positionChanges.subscribe(change => {
         const posX: SpotlightPositionX =
           change.connectionPair.overlayX === 'start' ? 'after' : 'before';
         const posY: SpotlightPositionY =
           change.connectionPair.overlayY === 'top' ? 'below' : 'above';
 
-        this.menu.setPositionClasses!(posX, posY);
+        this.spotlight.setPositionClasses!(posX, posY);
       });
     }
   }
 
   /**
-   * This method builds the position strategy for the overlay, so the menu is properly connected
-   * to the trigger.
-   * @returns ConnectedPositionStrategy
+   * This method builds the position strategy for the overlay, so
+   * the spotlight is properly connected to the trigger.
+   * @returns {ConnectedPositionStrategy}
    */
   private _getPosition(): FlexibleConnectedPositionStrategy {
     let [originX, originFallbackX]: HorizontalConnectionPos[] =
-      this.menu.xPosition === 'before' ? ['end', 'start'] : ['start', 'end'];
+      this.spotlight.xPosition === 'before' ? ['end', 'start'] : ['start', 'end'];
 
     let [overlayY, overlayFallbackY]: VerticalConnectionPos[] =
-      this.menu.yPosition === 'above' ? ['bottom', 'top'] : ['top', 'bottom'];
+      this.spotlight.yPosition === 'above' ? ['bottom', 'top'] : ['top', 'bottom'];
 
     let [originY, originFallbackY] = [overlayY, overlayFallbackY];
     let [overlayX, overlayFallbackX] = [originX, originFallbackX];
     let offsetY = 0;
 
-    if (!this.menu.overlapTrigger) {
+    if (!this.spotlight.overlapTrigger) {
       originY = overlayY === 'top' ? 'bottom' : 'top';
       originFallbackY = overlayFallbackY === 'top' ? 'bottom' : 'top';
     }
@@ -384,16 +393,18 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
       ]);
   }
 
-  /** Cleans up the active subscriptions. */
+  /**
+   * Cleans up the active subscriptions.
+   */
   private _cleanUpSubscriptions(): void {
     this._closeSubscription.unsubscribe();
     this._hoverSubscription.unsubscribe();
   }
 
   /**
-   * Returns a stream that emits whenever an action that should close the menu occurs.
+   * Returns a stream that emits whenever an action that should close the spotlight occurs.
    */
-  private _menuClosingActions() {
+  private _spotlightClosingActions() {
     const backdrop = this._overlayRef!.backdropClick();
     const detachments = this._overlayRef!.detachments();
     const hover = observableOf();
@@ -401,14 +412,18 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
     return merge(backdrop, hover, detachments);
   }
 
-  /** Handles mouse presses on the trigger. */
+  /**
+   * Handles mouse presses on the target.
+   */
   _handleMousedown(event: MouseEvent): void {
     if (!isFakeMousedownFromScreenReader(event)) {
       this._openedByMouse = true;
     }
   }
 
-  /** Handles key presses on the trigger. */
+  /**
+   * Handles key presses on the target.
+   */
   _handleKeydown(event: KeyboardEvent): void {
     const keyCode = event.keyCode;
   }
@@ -417,7 +432,7 @@ export class MatMenuTrigger implements AfterContentInit, OnDestroy {
    * Handles click events on the trigger.
    */
   _handleClick(event: MouseEvent): void {
-    this.toggleMenu();
+    this.toggleSpotlight();
   }
 
   /**

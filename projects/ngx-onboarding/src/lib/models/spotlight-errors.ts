@@ -3,7 +3,7 @@
  * have a valid `obd-spotlight` instance
  * @docs-private
  */
-export function throwMatMenuMissingError() {
+export function throwSpotlightMissingError() {
   throw Error(`mat-menu-trigger: must pass in an mat-menu instance.
     Example:
       <mat-menu #menu="matMenu"></mat-menu>
