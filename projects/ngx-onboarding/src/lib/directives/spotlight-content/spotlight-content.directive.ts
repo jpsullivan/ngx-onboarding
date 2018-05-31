@@ -17,7 +17,7 @@ import { DOCUMENT } from '@angular/common';
 @Directive({
   selector: 'ng-template[obdSpotlightContent]'
 })
-export class SpotlightContent implements OnDestroy {
+export class SpotlightContentDirective implements OnDestroy {
   private _portal: TemplatePortal<any>;
   private _outlet: DomPortalOutlet;
 

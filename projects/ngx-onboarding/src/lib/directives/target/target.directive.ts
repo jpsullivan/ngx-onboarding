@@ -29,7 +29,6 @@ import { asapScheduler, merge, of as observableOf, Subscription } from 'rxjs';
 import { delay, filter, take, takeUntil } from 'rxjs/operators';
 import { Spotlight } from '../../components/spotlight/spotlight.component';
 import { throwSpotlightMissingError } from '../../models/spotlight-errors';
-import { MatMenuItem } from './menu-item';
 import { SpotlightPanel } from '../../models/spotlight-panel';
 import { SpotlightPositionX, SpotlightPositionY } from '../../models/spotlight-positions';
 
@@ -71,7 +70,7 @@ export const SPOTLIGHT_PANEL_TOP_PADDING = 8;
   },
   exportAs: 'obdSpotlightTarget'
 })
-export class SpotlightTarget implements AfterContentInit, OnDestroy {
+export class SpotlightTargetDirective implements AfterContentInit, OnDestroy {
   private _portal: TemplatePortal;
   private _overlayRef: OverlayRef | null = null;
   private _spotlightOpen: boolean = false;

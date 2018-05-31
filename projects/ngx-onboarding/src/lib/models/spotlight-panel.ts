@@ -2,7 +2,7 @@ import { EventEmitter, TemplateRef, InjectionToken } from '@angular/core';
 import { SpotlightPositionX, SpotlightPositionY } from './spotlight-positions';
 import { Direction } from '@angular/cdk/bidi';
 import { FocusOrigin } from '@angular/cdk/a11y';
-import { SpotlightContent } from '../directives/spotlight-content';
+import { SpotlightContentDirective } from '../directives/spotlight-content';
 
 /**
  * Injection token used to provide the parent menu to spotlight-specific components.
@@ -25,7 +25,7 @@ export interface SpotlightPanel<T = any> {
   resetActiveItem: () => void;
   setPositionClasses?: (x: SpotlightPositionX, y: SpotlightPositionY) => void;
   setElevation?(depth: number): void;
-  lazyContent?: SpotlightContent;
+  lazyContent?: SpotlightContentDirective;
   backdropClass?: string;
   hasBackdrop?: boolean;
   addItem?: (item: T) => void;

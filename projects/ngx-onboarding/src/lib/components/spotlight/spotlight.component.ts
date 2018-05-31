@@ -24,12 +24,11 @@ import {
 import { merge, Observable, Subject, Subscription } from 'rxjs';
 import { startWith, switchMap, take } from 'rxjs/operators';
 import { spotlightAnimations } from '../../models/spotlight-animations';
-import { SpotlightContent } from '../../directives/spotlight-content';
+import { SpotlightContentDirective } from '../../directives/spotlight-content';
 import {
   throwSpotlightInvalidPositionX,
   throwSpotlightInvalidPositionY
 } from '../../models/spotlight-errors';
-import { MatMenuItem } from './menu-item';
 import { OBD_SPOTLIGHT_PANEL, SpotlightPanel } from '../../models/spotlight-panel';
 import { SpotlightPositionX, SpotlightPositionY } from '../../models/spotlight-positions';
 import { AnimationEvent } from '@angular/animations';
@@ -79,7 +78,6 @@ export function SPOTLIGHT_DEFAULT_OPTIONS_FACTORY(): SpotlightDefaultOptions {
 const OBD_SPOTLIGHT_BASE_ELEVATION = 2;
 
 @Component({
-  moduleId: module.id,
   selector: 'obd-spotlight',
   templateUrl: 'spotlight.component.html',
   styleUrls: ['spotlight.component.css'],
@@ -89,17 +87,11 @@ const OBD_SPOTLIGHT_BASE_ELEVATION = 2;
   animations: [spotlightAnimations.transformMenu, spotlightAnimations.fadeInItems],
   providers: [{ provide: OBD_SPOTLIGHT_PANEL, useExisting: Spotlight }]
 })
-export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>, OnDestroy {
-  private _keyManager: FocusKeyManager<MatMenuItem>;
+export class Spotlight implements AfterContentInit, SpotlightPanel, OnDestroy {
+  private _keyManager: FocusKeyManager<any>;
   private _xPosition: SpotlightPositionX = this._defaultOptions.xPosition;
   private _yPosition: SpotlightPositionY = this._defaultOptions.yPosition;
   private _previousElevation: string;
-
-  /** Menu items inside the current menu. */
-  private _items: MatMenuItem[] = [];
-
-  /** Emits whenever the amount of menu items changes. */
-  private _itemChanges = new Subject<MatMenuItem[]>();
 
   /** Subscription to tab events on the spotlight panel */
   private _tabSubscription = Subscription.EMPTY;
@@ -150,17 +142,10 @@ export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>,
   @ViewChild(TemplateRef) templateRef: TemplateRef<any>;
 
   /**
-   * List of the items inside of a menu.
-   * @deprecated
-   * @deletion-target 7.0.0
-   */
-  @ContentChildren(MatMenuItem) items: QueryList<MatMenuItem>;
-
-  /**
    * Spotlight content that will be rendered lazily.
    * @docs-private
    */
-  @ContentChild(SpotlightContent) lazyContent: SpotlightContent;
+  @ContentChild(SpotlightContentDirective) lazyContent: SpotlightContentDirective;
 
   /** Whether the spotlight should overlap its trigger. */
   @Input()
@@ -236,7 +221,7 @@ export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>,
   ) {}
 
   ngAfterContentInit() {
-    this._keyManager = new FocusKeyManager<MatMenuItem>(this._items).withWrap().withTypeAhead();
+    // this._keyManager = new FocusKeyManager<MatMenuItem>(this._items).withWrap().withTypeAhead();
     this._tabSubscription = this._keyManager.tabOut.subscribe(() => this.close.emit('tab'));
   }
 
@@ -245,13 +230,10 @@ export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>,
     this.closed.complete();
   }
 
-  /** Stream that emits whenever the hovered menu item changes. */
-  _hovered(): Observable<MatMenuItem> {
-    return this._itemChanges.pipe(
-      startWith(this._items),
-      switchMap(items => merge(...items.map(item => item._hovered)))
-    );
-  }
+  /**
+   * Stream that emits whenever the hovered menu item changes.
+   */
+  _hovered() {}
 
   /**
    * Handle a keyboard event from the spotlight, delegating to the appropriate action.
@@ -265,14 +247,8 @@ export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>,
         event.stopPropagation();
         break;
       case LEFT_ARROW:
-        if (this.parentMenu && this.direction === 'ltr') {
-          this.closed.emit('keydown');
-        }
         break;
       case RIGHT_ARROW:
-        if (this.parentMenu && this.direction === 'rtl') {
-          this.closed.emit('keydown');
-        }
         break;
       default:
         if (keyCode === UP_ARROW || keyCode === DOWN_ARROW) {
@@ -322,35 +298,6 @@ export class Spotlight implements AfterContentInit, SpotlightPanel<MatMenuItem>,
 
       this._classList[newElevation] = true;
       this._previousElevation = newElevation;
-    }
-  }
-
-  /**
-   * Registers a menu item with the menu.
-   * @docs-private
-   */
-  addItem(item: MatMenuItem) {
-    // We register the items through this method, rather than picking them up through
-    // `ContentChildren`, because we need the items to be picked up by their closest
-    // `mat-menu` ancestor. If we used `@ContentChildren(MatMenuItem, {descendants: true})`,
-    // all descendant items will bleed into the top-level menu in the case where the consumer
-    // has `mat-menu` instances nested inside each other.
-    if (this._items.indexOf(item) === -1) {
-      this._items.push(item);
-      this._itemChanges.next(this._items);
-    }
-  }
-
-  /**
-   * Removes an item from the menu.
-   * @docs-private
-   */
-  removeItem(item: MatMenuItem) {
-    const index = this._items.indexOf(item);
-
-    if (this._items.indexOf(item) > -1) {
-      this._items.splice(index, 1);
-      this._itemChanges.next(this._items);
     }
   }
 
